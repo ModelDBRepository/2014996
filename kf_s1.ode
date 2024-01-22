@@ -1,0 +1,80 @@
+# The silent model associated with the paper 'Exploring the role of Kӧlliker-Fuse nucleus in breathing 
+# variability via mathematical modeling' by S.R. John, W.H. Barnett, A.P.L. Abdala, D.B. Zoccal,
+# J. Rubin, and Y.I. Molkov
+
+########## KF parameters
+p const=400 num=100.0 vh=-50 sh=-0.5 par2=50. 
+p bkfkf_s = 0.0 dikf_s = 0.02 akfkf_s = 1. dkf_s = 0.1 akfpi_s = 0.75
+
+p bkfkf = 0.05 dikf = 0.001 akfkf = 1. dkf = 0.15 akfpi = 0.95 par1=35.
+
+########## other model parameters
+p a12=0.5 a51=0.5 a53=0.25 a61=0  
+p b31=0.15 b32=0.1 b41=1 b42=0.66 b43=0.2 b45=0.101 b23=0.42 b24=0.22 b25=0.09
+p a1=0.03 a2=0.875 a3=0.9 a4=0.6 a5=0.11 
+p gsyne = 10. gsyni = 60. gnap = 5. gk = 5. gkkf=0. gad = 10. gl = 2.8 glkf=2.5 gnap_le = 4.72
+p esyne = 0. esyni = -75. ena = 50. ek = -85. ekkf = -90 el = -60. elle=-66.5
+p thnapmax = 4000. tmad = 2000. vmnap = -40. kmnap = -6. vhnap = -55. khnap = 10.
+p vmk = -30. kmk = -4. c = 21. vmax = -20. vmin = -50. 
+
+########## Noise parameters
+wiener w_1,w_2,w_3,w_4,w_5,w_6,w_7
+p dscale=3.16,delta_1=1,delta_2=1,delta_3=1,delta_4=1,delta_5=1,delta_6=1,delta_7=1
+
+######### functions
+tm(v) = const+num/(1+exp((v-vh)/sh))
+mnap(v) = 1./(1. + exp((v - vmnap)/kmnap))
+hnap(v) = 1./(1. + exp((v - vhnap)/khnap))
+mk(v) = 1./(1. + exp((v - vmk)/kmk))
+thnap(v) = thnapmax/cosh((v - vhnap)/khnap)
+inap(v,h,gnap) = gnap*mnap(v)*h*(v - ena)
+iad(v,h,ek) = gad*h*(v-ek)
+ik(v,gk,ek) = gk*(mk(v))^4*(v-ek)
+il(v,el,gl) = gl*(v - el)
+f(v) = if(((v - vmin)/(vmax - vmin))<1)then(heav((v - vmin)/(vmax - vmin))*((v - vmin)/(vmax - vmin)))else(1)
+f2(v) = heav((v - vmin)/(-vmin))*((v - vmin)/(-vmin))
+isyne1(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v1 - esyne)*(a51*f(v5) + a61*f2(v6)+ a1)
+isyne2(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v2 - esyne)*(a12*f(v1) + a2)
+isyne3(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v3 - esyne)*(a53*f(v5) + a3)
+isyne4(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v4 - esyne)*(akfpi*f2(v6)+akfpi_s*f2(v7)+a4)
+isyne5(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v5 - esyne)*(a5)
+isyne6(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v6 - esyne)*(akfkf*f2(v6) + dkf)
+isyne7(v1,v2,v3,v4,v5,v6,v7) = gsyne*(v7 - esyne)*(akfkf_s*f2(v7) + dkf_s)
+isyni1(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v1 - esyni)*(b31*f(v3) + b41*f(v4))
+isyni2(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v2 - esyni)*(b32*f(v3) + b42*f(v4))
+isyni3(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v3 - esyni)*(b23*f(v2) + b43*f(v4))
+isyni4(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v4 - esyni)*(b24*f(v2))
+isyni5(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v5 - esyni)*(b25*f(v2) + b45*f(v4))
+isyni6(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v6 - esyni)*(bkfkf*f2(v6) + dikf)
+isyni7(v1,v2,v3,v4,v5,v6,v7) = gsyni*(v7 - esyni)*(bkfkf_s*f2(v7) + dikf_s)
+
+
+######### ode 
+v1'= -(inap(v1,h1,gnap) + ik(v1,gk,ek) + il(v1,el,gl) + isyne1(v1,v2,v3,v4,v5,v6,v7) + isyni1(v1,v2,v3,v4,v5,v6,v7)-w_1*delta_1*dscale)/c
+v2'= -(iad(v2,h2,ek) + ik(v2,gk,ek) + il(v2,el,gl) + isyne2(v1,v2,v3,v4,v5,v6,v7) + isyni2(v1,v2,v3,v4,v5,v6,v7)-w_2*delta_2*dscale)/c
+v3'= -(ik(v3,gk,ek) + il(v3,el,gl) + isyne3(v1,v2,v3,v4,v5,v6,v7) + isyni3(v1,v2,v3,v4,v5,v6,v7)-w_3*delta_3*dscale)/c
+v4'= -(iad(v4,h4,ek) + ik(v4,gk,ek) + il(v4,el,gl) + isyne4(v1,v2,v3,v4,v5,v6,v7) + isyni4(v1,v2,v3,v4,v5,v6,v7)-w_4*delta_4*dscale)/c
+v5'= -(inap(v5,h5,gnap_le) + ik(v5,gk,ek) + il(v5,elle,gl) + isyne5(v1,v2,v3,v4,v5,v6,v7) + isyni5(v1,v2,v3,v4,v5,v6,v7)-w_5*delta_5*dscale)/c
+v6'= -(iad(v6,h6,ekkf) + ik(v6,gkkf,ekkf) + il(v6,el,glkf) + isyne6(v1,v2,v3,v4,v5,v6,v7) + isyni6(v1,v2,v3,v4,v5,v6,v7)-w_6*delta_6*dscale)/c
+v7'= -(iad(v7,h7,ekkf) + ik(v7,gkkf,ekkf) + il(v7,el,glkf) + isyne7(v1,v2,v3,v4,v5,v6,v7) + isyni7(v1,v2,v3,v4,v5,v6,v7)-w_7*delta_7*dscale)/c
+h1'= (hnap(v1) - h1)/thnap(v1)
+h2'= (f(v2) - h2)/tmad
+h3'= (f(v3) - h3)/tmad
+h4'= (2*f(v4) - h4)/tmad
+h5'= (hnap(v5) - h5)/thnap(v5)
+h6'= ((f2(v6) - h6)/tmad)/par1
+h7'= ((f2(v7) - h7)/tm(v7))/par2
+
+aux preii=f(v1)
+aux earlyi=f(v2)
+aux auge=f(v3)
+aux posti=f(v4)
+aux latee=f(v5)
+aux kf1=f2(v6)
+aux kf2=f2(v7)
+
+
+@ dt=.1,total=150000,meth=qrk,xp=t,yp=posti,xlo=0,xhi=150000,ylo=-0.05,yhi=1.05.
+@ bound=50000000,maxstor=20000001
+
+done
